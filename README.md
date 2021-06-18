@@ -1,0 +1,1 @@
+Copy FreeSans6pt8b_cyr.h to libraries\Adafruit-GFX\Fonts\
