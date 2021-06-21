@@ -40,10 +40,15 @@ MenuType firstMenu = INFO;
 MenuType lastMenu = VALVEB_MINUTES;
 MenuType currentMenu = INFO;
 unsigned long menuChangeTime;
-unsigned int menuDelay = 120*1000; // ms
+unsigned int menuDelay = (unsigned int)120000; // ms
 bool blink = false;
 unsigned long blinkTime;
 unsigned int blinkDelay = 500; // ms
+
+byte valveTestPercent = 25;
+
+enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
+CommandType queuedCommand = C_NONE;
 
 TimeSpan scanDelay = new TimeSpan(60); // seconds
 DateTime lastScan; // 1 jan 2000
@@ -112,10 +117,6 @@ void loop() {
     lastScan = now;
   }
 
-  if (currentMenu == NONE) {
-    currentMenu = INFO;
-  }
-
   // reset menu after timeout
   if (currentMenu != INFO && menuChangeTime + menuDelay < millis()) {
     currentMenu = INFO;
@@ -126,6 +127,11 @@ void loop() {
   if (currentMenu != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
     doMenuAction(currentMenu, buttonPressed);
     buttonPressed = NONE;  
+  }
+
+  if (queuedCommand != C_NONE) {
+    doCommand(queuedCommand);
+    queuedCommand = C_NONE;
   }
 
   delay(200);
@@ -200,6 +206,93 @@ void doMenuAction(MenuType menu, ButtonType button) {
     }
     return;
   }
+
+  if (menu == VALVEA_TEST || menu == VALVEB_TEST) {
+    if (button == UP) {
+      byte percent = valveTestPercent + 25;
+      percent = percent > 100 ? 100 : percent;
+      valveTestPercent = percent;
+    } else if (button == DOWN) {
+      byte percent = valveTestPercent - 25;
+      percent = percent < 0 ? 0 : percent;
+      valveTestPercent = percent;
+    } else if (button == OK && menu == VALVEA_TEST) {
+      switch(valveTestPercent) {
+        case 0:
+          queuedCommand = VALVEA_CLOSE;
+          break;
+        case 25:
+          queuedCommand = VALVEA_OPEN_25;
+          break;
+        case 50:
+          queuedCommand = VALVEA_OPEN_50;
+          break;
+        case 75:
+          queuedCommand = VALVEA_OPEN_75;
+          break;
+        case 100:
+          queuedCommand = VALVEA_OPEN_100;
+          break;
+      }
+    } else if (button == OK && menu == VALVEB_TEST) {
+      switch(valveTestPercent) {
+        case 0:
+          queuedCommand = VALVEB_CLOSE;
+          break;
+        case 25:
+          queuedCommand = VALVEB_OPEN_25;
+          break;
+        case 50:
+          queuedCommand = VALVEB_OPEN_50;
+          break;
+        case 75:
+          queuedCommand = VALVEB_OPEN_75;
+          break;
+        case 100:
+          queuedCommand = VALVEB_OPEN_100;
+          break;
+      }
+    }
+  }
+}
+
+void doCommand(CommandType command) {
+  byte k_delay;
+  usingned long delay025 = 1500;
+  bool isValveOpen = false;
+  bool isValveClose = false;
+  switch(command) {
+    case VALVEA_OPEN_25:
+      k_delay = 1;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_50:
+      k_delay = 2;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_75:
+      k_delay = 3;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_100:
+      k_delay = 4;
+      isValveOpen = true;
+      break;
+    case VALVEA_CLOSE:
+      k_delay = 4;
+      isValveClose = true;
+  }
+
+  if (isValveOpen) {
+    digitalWrite(VALVE_OPEN_PIN, LOW);
+    delay(k_delay * delay025);
+    digitalWrite(VALVE_OPEN_PIN, HIGH);
+    return;
+  } else if (isValveClose) {
+    digitalWrite(VALVE_CLOSE_PIN, LOW);
+    delay(k_delay * delay025);
+    digitalWrite(VALVE_CLOSE_PIN, HIGH);
+  }
 }
 
 void updateDisplay(float t, float h) {
@@ -237,12 +330,16 @@ void printMenu(MenuType m) {
     printDateMenu(m, blink);
   } else if (m == VALVEA_TEST) {
     printMenuTitle("КРАН А ТЕСТ");
+    printValveTest(blink);
   } else if (m == VALVEB_TEST) {
     printMenuTitle("КРАН Б ТЕСТ");
+    printValveTest(blink);
   } else if (m == VALVEA_PERCENTAGE || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
     printMenuTitle("КРАН А");
   } else if (m == VALVEB_PERCENTAGE || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
     printMenuTitle("КРАН Б");
+  } else {
+    printMenuTitle(String(m));
   }
 }
 
@@ -279,6 +376,23 @@ void printDateMenu(MenuType m, bool blink) {
     display.setCursor(49,50);
     display.print(now.year()); // 31
   }
+}
+
+void printValveTest(bool blink) {
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+
+  display.setCursor(9,30);
+  display.print("Открыть:");
+  if (!blink) {
+    display.setCursor(64,30);
+    display.print(valveTestPercent); // 16
+  }
+  display.setCursor(82,30);
+  display.print("%");
+
+  display.setCursor(9,50);
+  display.print("OK - Применить");
 }
 
 void printMenuTitle(String title) {
