@@ -129,10 +129,10 @@ void loop() {
     buttonPressed = NONE;  
   }
 
-  if (queuedCommand != C_NONE) {
-    doCommand(queuedCommand);
-    queuedCommand = C_NONE;
-  }
+  //if (queuedCommand != C_NONE) {
+  //  doCommand(queuedCommand);
+  //  queuedCommand = C_NONE;
+  //}
 
   delay(200);
 
@@ -258,7 +258,7 @@ void doMenuAction(MenuType menu, ButtonType button) {
 
 void doCommand(CommandType command) {
   byte k_delay;
-  usingned long delay025 = 1500;
+  unsigned long delay025 = 1500;
   bool isValveOpen = false;
   bool isValveClose = false;
   switch(command) {
@@ -446,14 +446,7 @@ void swap() {
   //Serial.println(buttonState);
   if (buttonPressed == LEFT || buttonPressed == RIGHT) {
     changeMenu(buttonPressed);
-    
-    // digitalWrite(VALVE_OPEN_PIN, LOW);
-  } //else if (buttonPressed == RIGHT) {
-    //digitalWrite(VALVE_CLOSE_PIN, LOW);
-  //} else {
-  //  digitalWrite(VALVE_OPEN_PIN, HIGH);
-  //  digitalWrite(VALVE_CLOSE_PIN, HIGH);
-  //}
+  }
 }
 
 void changeMenu(ButtonType buttonPressed) {
