@@ -45,12 +45,15 @@ bool blink = false;
 unsigned long blinkTime;
 unsigned int blinkDelay = 500; // ms
 
-byte valveTestPercent = 25;
+uint8_t valveATestPercent = 25;
+uint8_t valveBTestPercent = 25;
+uint8_t valveAPercent = 25;
+uint8_t valveBPercent = 25;
 
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
 
-TimeSpan scanDelay = new TimeSpan(60); // seconds
+TimeSpan scanDelay = TimeSpan(60); // seconds
 DateTime lastScan; // 1 jan 2000
 float temperature = 0;
 float humidity = 0;
@@ -207,47 +210,55 @@ void doMenuAction(MenuType menu, ButtonType button) {
     return;
   }
 
-  if (menu == VALVEA_TEST || menu == VALVEB_TEST) {
-    if (button == UP && valveTestPercent < 100) {
-      valveTestPercent += 25;
-    } else if (button == DOWN && valveTestPercent > 0) {
-      valveTestPercent -= 25;
-    } else if (button == OK && menu == VALVEA_TEST) {
-      switch(valveTestPercent) {
-        case 0:
-          queuedCommand = VALVEA_CLOSE;
-          break;
-        case 25:
-          queuedCommand = VALVEA_OPEN_25;
-          break;
-        case 50:
-          queuedCommand = VALVEA_OPEN_50;
-          break;
-        case 75:
-          queuedCommand = VALVEA_OPEN_75;
-          break;
-        case 100:
-          queuedCommand = VALVEA_OPEN_100;
-          break;
-      }
-    } else if (button == OK && menu == VALVEB_TEST) {
-      switch(valveTestPercent) {
-        case 0:
-          queuedCommand = VALVEB_CLOSE;
-          break;
-        case 25:
-          queuedCommand = VALVEB_OPEN_25;
-          break;
-        case 50:
-          queuedCommand = VALVEB_OPEN_50;
-          break;
-        case 75:
-          queuedCommand = VALVEB_OPEN_75;
-          break;
-        case 100:
-          queuedCommand = VALVEB_OPEN_100;
-          break;
-      }
+  if (menu == VALVEA_TEST) {
+    if (button == UP && valveATestPercent < 100) {
+      valveATestPercent += 25;
+    } else if (button == DOWN && valveATestPercent > 0) {
+      valveATestPercent -= 25;
+    }
+  } else if (menu == VALVEB_TEST) {
+    if (button == UP && valveBTestPercent < 100) {
+      valveBTestPercent += 25;
+    } else if (button == DOWN && valveBTestPercent > 0) {
+      valveBTestPercent -= 25;
+    }
+  }
+
+  if (button == OK && menu == VALVEA_TEST) {
+    switch(valveATestPercent) {
+      case 0:
+        queuedCommand = VALVEA_CLOSE;
+        break;
+      case 25:
+        queuedCommand = VALVEA_OPEN_25;
+        break;
+      case 50:
+        queuedCommand = VALVEA_OPEN_50;
+        break;
+      case 75:
+        queuedCommand = VALVEA_OPEN_75;
+        break;
+      case 100:
+        queuedCommand = VALVEA_OPEN_100;
+        break;
+    }
+  } else if (button == OK && menu == VALVEB_TEST) {
+    switch(valveBTestPercent) {
+      case 0:
+        queuedCommand = VALVEB_CLOSE;
+        break;
+      case 25:
+        queuedCommand = VALVEB_OPEN_25;
+        break;
+      case 50:
+        queuedCommand = VALVEB_OPEN_50;
+        break;
+      case 75:
+        queuedCommand = VALVEB_OPEN_75;
+        break;
+      case 100:
+        queuedCommand = VALVEB_OPEN_100;
+        break;
     }
   }
 }
@@ -326,16 +337,23 @@ void printMenu(MenuType m) {
     printDateMenu(m, blink);
   } else if (m == VALVEA_TEST) {
     printMenuTitle("КРАН А ТЕСТ");
-    printValveTest(blink);
+    printValveTest(blink, valveATestPercent);
   } else if (m == VALVEB_TEST) {
     printMenuTitle("КРАН Б ТЕСТ");
-    printValveTest(blink);
+    printValveTest(blink, valveBTestPercent);
   } else if (m == VALVEA_PERCENTAGE || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
     printMenuTitle("КРАН А");
+    uint8_t hh = 19;
+    uint8_t mm = 0;
+    printValveSettings(m, blink, valveAPercent, hh, mm);
   } else if (m == VALVEB_PERCENTAGE || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
     printMenuTitle("КРАН Б");
+    uint8_t hh = 19;
+    uint8_t mm = 0;
+    printValveSettings(m, blink, valveBPercent, hh, mm);
   } else {
-    //printMenuTitle(String(m));
+    //int unknownMenu = static_cast<int>(currentMenu);
+    //printMenuTitle(String(unknownMenu));
   }
 }
 
@@ -374,7 +392,7 @@ void printDateMenu(MenuType m, bool blink) {
   }
 }
 
-void printValveTest(bool blink) {
+void printValveTest(bool blink, uint8_t percent) {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
@@ -382,13 +400,45 @@ void printValveTest(bool blink) {
   display.print("Открыть:");
   if (!blink) {
     display.setCursor(64,30);
-    display.print(valveTestPercent); // 16
+    display.print(percent); // 16
   }
   display.setCursor(88,30);
   display.print("%");
 
   display.setCursor(9,50);
   display.print("OK - Применить");
+}
+
+void printValveSettings(MenuType m, bool blink, uint8_t percent, uint8_t hour, uint8_t minute) {
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+
+  display.setCursor(9,30);
+  display.print("Открыть:");
+  if ((m != VALVEA_PERCENTAGE && m != VALVEB_PERCENTAGE) || !blink) {
+    display.setCursor(64,30);
+    display.print(percent); // 16
+  }
+  display.setCursor(88,30);
+  display.print("%");
+
+  display.setCursor(9,50);
+  display.print("Время:");
+  if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
+    display.setCursor(57,50);
+    display.print(twoDigitsFromByte(hour)); // 16
+  }
+  display.setCursor(73,50);
+  display.print(":"); // 4
+  if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
+    display.setCursor(77,50);
+    display.print(twoDigitsFromByte(minute));
+  }
+
+  //display.setCursor(9,70);
+  //display.print("Задержка:");
+  //display.setCursor(88,70);
+  //display.print("мин");
 }
 
 void printMenuTitle(String title) {
@@ -445,6 +495,10 @@ void swap() {
   if (buttonPressed == LEFT || buttonPressed == RIGHT) {
     changeMenu(buttonPressed);
   }
+
+  if (buttonPressed != NONE) {
+    menuChangeTime = millis();
+  }
 }
 
 void changeMenu(ButtonType buttonPressed) {
@@ -457,6 +511,4 @@ void changeMenu(ButtonType buttonPressed) {
   } else if (buttonPressed == RIGHT) {
     currentMenu = static_cast<MenuType>(static_cast<int>(currentMenu) + 1);
   }
-
-  menuChangeTime = millis();
 }
