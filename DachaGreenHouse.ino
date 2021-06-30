@@ -129,10 +129,10 @@ void loop() {
     buttonPressed = NONE;  
   }
 
-  //if (queuedCommand != C_NONE) {
-  //  doCommand(queuedCommand);
-  //  queuedCommand = C_NONE;
-  //}
+  if (queuedCommand != C_NONE) {
+    doCommand(queuedCommand);
+    queuedCommand = C_NONE;
+  }
 
   delay(200);
 
@@ -207,93 +207,89 @@ void doMenuAction(MenuType menu, ButtonType button) {
     return;
   }
 
-  // if (menu == VALVEA_TEST || menu == VALVEB_TEST) {
-  //   if (button == UP) {
-  //     byte percent = valveTestPercent + 25;
-  //     percent = percent > 100 ? 100 : percent;
-  //     valveTestPercent = percent;
-  //   } else if (button == DOWN) {
-  //     byte percent = valveTestPercent - 25;
-  //     percent = percent < 0 ? 0 : percent;
-  //     valveTestPercent = percent;
-  //   } else if (button == OK && menu == VALVEA_TEST) {
-  //     switch(valveTestPercent) {
-  //       case 0:
-  //         queuedCommand = VALVEA_CLOSE;
-  //         break;
-  //       case 25:
-  //         queuedCommand = VALVEA_OPEN_25;
-  //         break;
-  //       case 50:
-  //         queuedCommand = VALVEA_OPEN_50;
-  //         break;
-  //       case 75:
-  //         queuedCommand = VALVEA_OPEN_75;
-  //         break;
-  //       case 100:
-  //         queuedCommand = VALVEA_OPEN_100;
-  //         break;
-  //     }
-  //   } else if (button == OK && menu == VALVEB_TEST) {
-  //     switch(valveTestPercent) {
-  //       case 0:
-  //         queuedCommand = VALVEB_CLOSE;
-  //         break;
-  //       case 25:
-  //         queuedCommand = VALVEB_OPEN_25;
-  //         break;
-  //       case 50:
-  //         queuedCommand = VALVEB_OPEN_50;
-  //         break;
-  //       case 75:
-  //         queuedCommand = VALVEB_OPEN_75;
-  //         break;
-  //       case 100:
-  //         queuedCommand = VALVEB_OPEN_100;
-  //         break;
-  //     }
-  //   }
-  // }
+  if (menu == VALVEA_TEST || menu == VALVEB_TEST) {
+    if (button == UP && valveTestPercent < 100) {
+      valveTestPercent += 25;
+    } else if (button == DOWN && valveTestPercent > 0) {
+      valveTestPercent -= 25;
+    } else if (button == OK && menu == VALVEA_TEST) {
+      switch(valveTestPercent) {
+        case 0:
+          queuedCommand = VALVEA_CLOSE;
+          break;
+        case 25:
+          queuedCommand = VALVEA_OPEN_25;
+          break;
+        case 50:
+          queuedCommand = VALVEA_OPEN_50;
+          break;
+        case 75:
+          queuedCommand = VALVEA_OPEN_75;
+          break;
+        case 100:
+          queuedCommand = VALVEA_OPEN_100;
+          break;
+      }
+    } else if (button == OK && menu == VALVEB_TEST) {
+      switch(valveTestPercent) {
+        case 0:
+          queuedCommand = VALVEB_CLOSE;
+          break;
+        case 25:
+          queuedCommand = VALVEB_OPEN_25;
+          break;
+        case 50:
+          queuedCommand = VALVEB_OPEN_50;
+          break;
+        case 75:
+          queuedCommand = VALVEB_OPEN_75;
+          break;
+        case 100:
+          queuedCommand = VALVEB_OPEN_100;
+          break;
+      }
+    }
+  }
 }
 
-// void doCommand(CommandType command) {
-//   byte k_delay;
-//   unsigned long delay025 = 1500;
-//   bool isValveOpen = false;
-//   bool isValveClose = false;
-//   switch(command) {
-//     case VALVEA_OPEN_25:
-//       k_delay = 1;
-//       isValveOpen = true;
-//       break;
-//     case VALVEA_OPEN_50:
-//       k_delay = 2;
-//       isValveOpen = true;
-//       break;
-//     case VALVEA_OPEN_75:
-//       k_delay = 3;
-//       isValveOpen = true;
-//       break;
-//     case VALVEA_OPEN_100:
-//       k_delay = 4;
-//       isValveOpen = true;
-//       break;
-//     case VALVEA_CLOSE:
-//       k_delay = 4;
-//       isValveClose = true;
-//   }
+void doCommand(CommandType command) {
+  byte k_delay;
+  unsigned long delay025 = 900;
+  bool isValveOpen = false;
+  bool isValveClose = false;
+  switch(command) {
+    case VALVEA_OPEN_25:
+      k_delay = 1;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_50:
+      k_delay = 2;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_75:
+      k_delay = 3;
+      isValveOpen = true;
+      break;
+    case VALVEA_OPEN_100:
+      k_delay = 4;
+      isValveOpen = true;
+      break;
+    case VALVEA_CLOSE:
+      k_delay = 4;
+      isValveClose = true;
+  }
 
-//   if (isValveOpen) {
-//     digitalWrite(VALVE_OPEN_PIN, LOW);
-//     delay(k_delay * delay025);
-//     digitalWrite(VALVE_OPEN_PIN, HIGH);
-//     return;
-//   } else if (isValveClose) {
-//     digitalWrite(VALVE_CLOSE_PIN, LOW);
-//     delay(k_delay * delay025);
-//     digitalWrite(VALVE_CLOSE_PIN, HIGH);
-//   }
-// }
+  if (isValveOpen) {
+    digitalWrite(VALVE_OPEN_PIN, LOW);
+    delay(k_delay * delay025);
+    digitalWrite(VALVE_OPEN_PIN, HIGH);
+    return;
+  } else if (isValveClose) {
+    digitalWrite(VALVE_CLOSE_PIN, LOW);
+    delay(k_delay * delay025);
+    digitalWrite(VALVE_CLOSE_PIN, HIGH);
+  }
+}
 
 void updateDisplay(float t, float h) {
   DateTime now = rtc.now();
@@ -388,7 +384,7 @@ void printValveTest(bool blink) {
     display.setCursor(64,30);
     display.print(valveTestPercent); // 16
   }
-  display.setCursor(82,30);
+  display.setCursor(88,30);
   display.print("%");
 
   display.setCursor(9,50);
