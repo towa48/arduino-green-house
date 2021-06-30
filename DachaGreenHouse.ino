@@ -35,7 +35,7 @@
 enum ButtonType { NONE, LEFT, UP, OK, DOWN, RIGHT };
 ButtonType buttonPressed = NONE;
 
-enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST, VALVEA_PERCENTAGE, VALVEA_HOURS, VALVEA_MINUTES, VALVEB_PERCENTAGE, VALVEB_HOURS, VALVEB_MINUTES };
+enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST, VALVEA_PERCENTAGE, VALVEA_DELAY, VALVEA_HOURS, VALVEA_MINUTES, VALVEB_PERCENTAGE, VALVEB_DELAY, VALVEB_HOURS, VALVEB_MINUTES };
 MenuType firstMenu = INFO;
 MenuType lastMenu = VALVEB_MINUTES;
 MenuType currentMenu = INFO;
@@ -341,16 +341,18 @@ void printMenu(MenuType m) {
   } else if (m == VALVEB_TEST) {
     printMenuTitle("КРАН Б ТЕСТ");
     printValveTest(blink, valveBTestPercent);
-  } else if (m == VALVEA_PERCENTAGE || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
+  } else if (m == VALVEA_PERCENTAGE || m == VALVEA_DELAY || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
     printMenuTitle("КРАН А");
     uint8_t hh = 19;
     uint8_t mm = 0;
-    printValveSettings(m, blink, valveAPercent, hh, mm);
-  } else if (m == VALVEB_PERCENTAGE || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
+    uint32_t delay = 120;
+    printValveSettings(m, blink, valveAPercent, delay, hh, mm);
+  } else if (m == VALVEB_PERCENTAGE || m == VALVEB_DELAY || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
     printMenuTitle("КРАН Б");
     uint8_t hh = 19;
     uint8_t mm = 0;
-    printValveSettings(m, blink, valveBPercent, hh, mm);
+    uint32_t delay = 120;
+    printValveSettings(m, blink, valveBPercent, delay, hh, mm);
   } else {
     //int unknownMenu = static_cast<int>(currentMenu);
     //printMenuTitle(String(unknownMenu));
@@ -409,7 +411,7 @@ void printValveTest(bool blink, uint8_t percent) {
   display.print("OK - Применить");
 }
 
-void printValveSettings(MenuType m, bool blink, uint8_t percent, uint8_t hour, uint8_t minute) {
+void printValveSettings(MenuType m, bool blink, uint8_t percent, uint32_t delay, uint8_t hour, uint8_t minute) {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
@@ -421,6 +423,13 @@ void printValveSettings(MenuType m, bool blink, uint8_t percent, uint8_t hour, u
   }
   display.setCursor(58,30);
   display.print("%");
+
+  if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
+    display.setCursor(75,30);
+    display.print(delay); // 16
+  }
+  display.setCursor(100,30);
+  display.print("мин");
 
   display.setCursor(9,50);
   display.print("Время:");
@@ -436,7 +445,7 @@ void printValveSettings(MenuType m, bool blink, uint8_t percent, uint8_t hour, u
   }
 }
 
-void printMenuTitle(String title) {
+void printMenuTitle(const char *title) {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
