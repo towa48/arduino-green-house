@@ -365,24 +365,24 @@ void printDateMenu(MenuType m, bool blink) {
 
   if (m != HOURS || !blink) {
     display.setCursor(9,30);
-    display.print(twoDigitsFromByte(now.hour())); // 16
+    display.print(byteFormat(now.hour(), "hh")); // 16
   }
   display.setCursor(25,30);
   display.print(":"); // 4
   if (m != MINUTES || !blink) {
     display.setCursor(29,30);
-    display.print(twoDigitsFromByte(now.minute()));
+    display.print(byteFormat(now.minute(), "hh"));
   }
 
   if (m != DAY || !blink) {
     display.setCursor(9,50);
-    display.print(twoDigitsFromByte(now.day()));
+    display.print(byteFormat(now.day(), "hh"));
   }
   display.setCursor(25,50);
   display.print("."); // 4
   if (m != MONTH || !blink) {
     display.setCursor(29,50);
-    display.print(twoDigitsFromByte(now.month())); // 16
+    display.print(byteFormat(now.month(), "hh")); // 16
   }
   display.setCursor(45,50);
   display.print(".");
@@ -414,31 +414,26 @@ void printValveSettings(MenuType m, bool blink, uint8_t percent, uint8_t hour, u
   display.setTextColor(WHITE);
 
   display.setCursor(9,30);
-  display.print("Открыть:");
+  display.print("Откр:");
   if ((m != VALVEA_PERCENTAGE && m != VALVEB_PERCENTAGE) || !blink) {
-    display.setCursor(64,30);
+    display.setCursor(42,30);
     display.print(percent); // 16
   }
-  display.setCursor(88,30);
+  display.setCursor(58,30);
   display.print("%");
 
   display.setCursor(9,50);
   display.print("Время:");
   if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
     display.setCursor(57,50);
-    display.print(twoDigitsFromByte(hour)); // 16
+    display.print(byteFormat(hour, "hh")); // 16
   }
   display.setCursor(73,50);
   display.print(":"); // 4
   if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
     display.setCursor(77,50);
-    display.print(twoDigitsFromByte(minute));
+    display.print(byteFormat(minute, "hh"));
   }
-
-  //display.setCursor(9,70);
-  //display.print("Задержка:");
-  //display.setCursor(88,70);
-  //display.print("мин");
 }
 
 void printMenuTitle(String title) {
@@ -465,20 +460,20 @@ void printTime(DateTime now) {
   display.setTextSize(3);
   display.setTextColor(WHITE);
   display.setCursor(9,50); // 9,24
-  display.print(twoDigitsFromByte(now.hour()));
-  display.setCursor(60,50);
+  display.print(byteFormat(now.hour(), "hh"));
+  display.setCursor(58,50);
   display.print(":");
   display.setCursor(73,50);
-  display.print(twoDigitsFromByte(now.minute()));
+  display.print(byteFormat(now.minute(), "hh"));
 }
 
-String twoDigitsFromByte(uint8_t value) {
-  char buffer[3];
-  buffer[0] = '0' + value / 10;
-  buffer[1] = '0' + value % 10;
-  buffer[2] = 0x00;
+char *byteFormat(uint8_t value, char *format) {
+  if (format[0] == 'h' && format[1] == 'h') {
+    format[0] = '0' + value / 10;
+    format[1] = '0' + value % 10;
+  }
 
-  return String(buffer);
+  return format;
 }
 
 void swap() {
