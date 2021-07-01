@@ -278,6 +278,8 @@ void doMenuAction(MenuType menu, ButtonType button) {
     return;
   }
 
+  // VALVE A SETTINGS
+
   if (menu == VALVEA_PERCENTAGE) {
     if (button == UP && valveASettings.percent < 100) {
       valveASettings.percent += 25;
@@ -312,6 +314,46 @@ void doMenuAction(MenuType menu, ButtonType button) {
       valveASettings.minute -= 1;
     }else if (button == DOWN && valveASettings.minute <= 0) {
       valveASettings.minute = 59;
+    }
+    return;
+  }
+
+  // VALVE B SETTINGS
+
+  if (menu == VALVEB_PERCENTAGE) {
+    if (button == UP && valveBSettings.percent < 100) {
+      valveBSettings.percent += 25;
+    } else if (button == DOWN && valveBSettings.percent > 25) {
+      valveBSettings.percent -= 25;
+    }
+    return;
+  } else if (menu == VALVEB_DELAY) {
+    if (button == UP && valveBSettings.delay < 360) {
+      valveBSettings.delay += 10;
+    } else if (button == DOWN && valveBSettings.delay > 10) {
+      valveBSettings.delay -= 10;
+    }
+    return;
+  } else if (menu == VALVEB_HOURS) {
+    if (button == UP && valveBSettings.hour < 23) {
+      valveBSettings.hour += 1;
+    }else if (button == UP && valveBSettings.hour >= 23) {
+      valveBSettings.hour = 0;
+    } else if (button == DOWN && valveBSettings.hour > 0) {
+      valveBSettings.hour -= 1;
+    }else if (button == DOWN && valveBSettings.hour <= 0) {
+      valveBSettings.hour = 23;
+    }
+    return;
+  } else if (menu == VALVEB_MINUTES) {
+    if (button == UP && valveBSettings.minute < 59) {
+      valveBSettings.minute += 1;
+    }else if (button == UP && valveBSettings.minute >= 59) {
+      valveBSettings.minute = 0;
+    } else if (button == DOWN && valveBSettings.minute > 0) {
+      valveBSettings.minute -= 1;
+    }else if (button == DOWN && valveBSettings.minute <= 0) {
+      valveBSettings.minute = 59;
     }
     return;
   }
