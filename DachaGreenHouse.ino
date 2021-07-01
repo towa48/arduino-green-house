@@ -495,6 +495,11 @@ char *byteFormat(uint8_t value, char *format) {
 }
 
 void swap() {
+  if (menuState.changeTime + 200 > millis()) {
+    // prevent double click
+    return;
+  }
+
   int buttonState = analogRead(BUTTON_PIN);
   buttonPressed = NONE;
 
