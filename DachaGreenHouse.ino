@@ -65,6 +65,15 @@ ValveSettings valveBSettings = {25, 19, 0, 30};
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
 
+enum VALVE_STATE { S_NONE, VALVE_OPEN, VALVE_CLOSE };
+struct AppState {
+  VALVE_STATE valveA;
+  VALVE_STATE valveB;
+  DateTime valveALastOpen;
+  DateTime valveBLastOpen;
+};
+AppState state = { S_NONE, S_NONE };
+
 TimeSpan scanDelay = TimeSpan(60); // seconds
 DateTime lastScan; // 1 jan 2000
 float temperature = 0;
@@ -118,6 +127,10 @@ void setup() {
 
   // TODO: Load struct from EEPROM
 
+  // Clear state
+  doCommand(VALVEA_CLOSE);
+  doCommand(VALVEB_CLOSE);
+
   attachInterrupt(0, swap, RISING);
   delay(2000); // init sensors
 }
@@ -145,6 +158,8 @@ void loop() {
     doMenuAction(menuState.current, buttonPressed);
     buttonPressed = NONE;  
   }
+
+  checkQueuedCommand();
 
   if (queuedCommand != C_NONE) {
     doCommand(queuedCommand);
@@ -357,6 +372,59 @@ void doMenuAction(MenuType menu, ButtonType button) {
     }
     return;
   }
+}
+
+void checkQueuedCommand() {
+  DateTime now = rtc.now();
+
+  if (state.valveA == S_NONE && now.hour() == valveASettings.hour && now.minute() == valveASettings.minute) {
+    switch(valveASettings.percent) {
+      case 25:
+        queuedCommand = VALVEA_OPEN_25;
+        state.valveA = VALVE_OPEN;
+        state.valveALastOpen = now;
+        break;
+      case 50:
+        queuedCommand = VALVEA_OPEN_50;
+        state.valveA = VALVE_OPEN;
+        state.valveALastOpen = now;
+        break;
+      case 75:
+        queuedCommand = VALVEA_OPEN_75;
+        state.valveA = VALVE_OPEN;
+        state.valveALastOpen = now;
+        break;
+      default:
+        queuedCommand = VALVEA_OPEN_100;
+        state.valveA = VALVE_OPEN;
+        state.valveALastOpen = now;
+        break;
+    }
+  } else if (state.valveA == VALVE_OPEN && state.valveALastOpen + TimeSpan(valveASettings.delay * 60) < now) {
+    queuedCommand = VALVEA_CLOSE;
+    state.valveA = S_NONE;
+  }
+
+  //if (state.valveB == S_NONE && now.hour() == valveBSettings.hour && now.minute() == valveBSettings.minute) {
+  //  switch(valveBSettings.percent) {
+  //    case 25:
+  //      queuedCommand = VALVEB_OPEN_25;
+  //      state.valveB = VALVE_OPEN;
+  //      break;
+  //    case 50:
+  //      queuedCommand = VALVEB_OPEN_50;
+  //      state.valveB = VALVE_OPEN;
+  //      break;
+  //    case 75:
+  //      queuedCommand = VALVEB_OPEN_75;
+  //      state.valveA = VALVE_OPEN;
+  //      break;
+  //    default:
+  //      queuedCommand = VALVEB_OPEN_100;
+  //      state.valveB = VALVE_OPEN;
+  //      break;
+  //  }
+  //}
 }
 
 void doCommand(CommandType command) {
