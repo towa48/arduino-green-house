@@ -47,8 +47,15 @@ unsigned int blinkDelay = 500; // ms
 
 uint8_t valveATestPercent = 25;
 uint8_t valveBTestPercent = 25;
-uint8_t valveAPercent = 25;
-uint8_t valveBPercent = 25;
+
+struct ValveSettings {
+  uint8_t percent;
+  uint8_t hour;
+  uint8_t minute;
+  uint32_t delay; // min
+};
+ValveSettings valveASettings = {25, 19, 0, 30};
+ValveSettings valveBSettings = {25, 19, 0, 30};
 
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
@@ -104,8 +111,10 @@ void setup() {
 
   pinMode(BUTTON_PIN, INPUT);
 
+  // TODO: Load struct from EEPROM
+
   attachInterrupt(0, swap, RISING);
-  delay(3000); // init sensors
+  delay(2000); // init sensors
 }
 
 void loop() {
@@ -343,16 +352,10 @@ void printMenu(MenuType m) {
     printValveTest(blink, valveBTestPercent);
   } else if (m == VALVEA_PERCENTAGE || m == VALVEA_DELAY || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
     printMenuTitle("КРАН А");
-    uint8_t hh = 19;
-    uint8_t mm = 0;
-    uint32_t delay = 120;
-    printValveSettings(m, blink, valveAPercent, delay, hh, mm);
+    printValveSettings(m, blink, valveASettings);
   } else if (m == VALVEB_PERCENTAGE || m == VALVEB_DELAY || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
     printMenuTitle("КРАН Б");
-    uint8_t hh = 19;
-    uint8_t mm = 0;
-    uint32_t delay = 120;
-    printValveSettings(m, blink, valveBPercent, delay, hh, mm);
+    printValveSettings(m, blink, valveBSettings);
   } else {
     //int unknownMenu = static_cast<int>(currentMenu);
     //printMenuTitle(String(unknownMenu));
@@ -411,7 +414,7 @@ void printValveTest(bool blink, uint8_t percent) {
   display.print("OK - Применить");
 }
 
-void printValveSettings(MenuType m, bool blink, uint8_t percent, uint32_t delay, uint8_t hour, uint8_t minute) {
+void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
@@ -419,14 +422,14 @@ void printValveSettings(MenuType m, bool blink, uint8_t percent, uint32_t delay,
   display.print("Откр:");
   if ((m != VALVEA_PERCENTAGE && m != VALVEB_PERCENTAGE) || !blink) {
     display.setCursor(42,30);
-    display.print(percent); // 16
+    display.print(settings.percent); // 16
   }
   display.setCursor(58,30);
   display.print("%");
 
   if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
     display.setCursor(75,30);
-    display.print(delay); // 16
+    display.print(settings.delay); // 16
   }
   display.setCursor(100,30);
   display.print("мин");
@@ -435,13 +438,13 @@ void printValveSettings(MenuType m, bool blink, uint8_t percent, uint32_t delay,
   display.print("Время:");
   if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
     display.setCursor(57,50);
-    display.print(byteFormat(hour, "hh")); // 16
+    display.print(byteFormat(settings.hour, "hh")); // 16
   }
   display.setCursor(73,50);
   display.print(":"); // 4
   if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
     display.setCursor(77,50);
-    display.print(byteFormat(minute, "hh"));
+    display.print(byteFormat(settings.minute, "hh"));
   }
 }
 
