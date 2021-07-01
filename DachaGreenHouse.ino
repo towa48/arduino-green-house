@@ -256,6 +256,7 @@ void doMenuAction(MenuType menu, ButtonType button) {
         queuedCommand = VALVEA_OPEN_100;
         break;
     }
+    return;
   } else if (button == OK && menu == VALVEB_TEST) {
     switch(valveBTestPercent) {
       case 0:
@@ -274,6 +275,45 @@ void doMenuAction(MenuType menu, ButtonType button) {
         queuedCommand = VALVEB_OPEN_100;
         break;
     }
+    return;
+  }
+
+  if (menu == VALVEA_PERCENTAGE) {
+    if (button == UP && valveASettings.percent < 100) {
+      valveASettings.percent += 25;
+    } else if (button == DOWN && valveASettings.percent > 25) {
+      valveASettings.percent -= 25;
+    }
+    return;
+  } else if (menu == VALVEA_DELAY) {
+    if (button == UP && valveASettings.delay < 360) {
+      valveASettings.delay += 10;
+    } else if (button == DOWN && valveASettings.delay > 10) {
+      valveASettings.delay -= 10;
+    }
+    return;
+  } else if (menu == VALVEA_HOURS) {
+    if (button == UP && valveASettings.hour < 23) {
+      valveASettings.hour += 1;
+    }else if (button == UP && valveASettings.hour >= 23) {
+      valveASettings.hour = 0;
+    } else if (button == DOWN && valveASettings.hour > 0) {
+      valveASettings.hour -= 1;
+    }else if (button == DOWN && valveASettings.hour <= 0) {
+      valveASettings.hour = 23;
+    }
+    return;
+  } else if (menu == VALVEA_MINUTES) {
+    if (button == UP && valveASettings.minute < 59) {
+      valveASettings.minute += 1;
+    }else if (button == UP && valveASettings.minute >= 59) {
+      valveASettings.minute = 0;
+    } else if (button == DOWN && valveASettings.minute > 0) {
+      valveASettings.minute -= 1;
+    }else if (button == DOWN && valveASettings.minute <= 0) {
+      valveASettings.minute = 59;
+    }
+    return;
   }
 }
 
