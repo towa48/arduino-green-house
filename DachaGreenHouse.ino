@@ -59,8 +59,8 @@ struct ValveSettings {
   uint8_t minute;
   uint32_t delay; // min
 };
-ValveSettings valveASettings = {25, 19, 0, 30};
-ValveSettings valveBSettings = {25, 19, 0, 30};
+ValveSettings valveASettings = {100, 19, 0, 30};
+ValveSettings valveBSettings = {100, 19, 0, 30};
 
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
