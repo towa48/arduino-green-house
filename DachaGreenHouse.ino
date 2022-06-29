@@ -2,13 +2,17 @@
  * 4 pin I2C SSD1306 display
  */
 
-#include "RTClib.h"
-#include "DHT.h"
-
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+#include "RTClib.h"
+
+#include "GreenHouseMenu.h"
+#include "GreenHouseSensors.h"
+
+// Copy FreeSans6pt8b_cyr.h to libraries\Adafruit-GFX\Fonts
 #include <Fonts/FreeSans6pt8b_cyr.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -23,14 +27,13 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 
 #define DHTPIN 4
-#define DHTTYPE DHT22
 
 #define VALVE_OPEN_PIN 7
 #define VALVE_CLOSE_PIN 8
 #define BUTTON_PIN 0
 
 //uint32_t emptyTimestamp = 946684800; // 1 jan 2000
-//DateTime emptyDate = new DateTime(emptyTimestamp);
+//DateTime emptyDate = DateTime(emptyTimestamp);
 
 enum ButtonType { NONE, LEFT, UP, OK, DOWN, RIGHT };
 ButtonType buttonPressed = NONE;
@@ -53,15 +56,8 @@ MenuState menuState = { INFO, 0, false, 0 };
 uint8_t valveATestPercent = 25;
 uint8_t valveBTestPercent = 25;
 
-struct ValveSettings {
-  uint8_t percent;
-  uint8_t hour;
-  uint8_t minute;
-  uint32_t delay; // min
-};
-ValveSettings valveASettings = {100, 19, 0, 10};
-ValveSettings valveBSettings = {100, 19, 0, 10};
-
+ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=3 };
+ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
 
@@ -74,14 +70,9 @@ struct AppState {
 };
 AppState state = { S_NONE, S_NONE };
 
-TimeSpan scanDelay = TimeSpan(60); // seconds
-DateTime lastScan; // 1 jan 2000
-float temperature = 0;
-float humidity = 0;
-
-DHT dht(DHTPIN, DHTTYPE);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 RTC_DS3231 rtc;
+GreenHouseSensors sensors(DHTPIN, rtc);
 
 void setup() {
   // put your setup code here, to run once:
@@ -94,13 +85,13 @@ void setup() {
     for(;;); // Don't proceed, loop forever
   }
 
-  dht.begin();
-
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
     Serial.flush();
     abort();
   }
+
+  sensors.begin();
 
   if (rtc.lostPower()) {
     Serial.println("RTC lost power, let's set the time!");
@@ -139,20 +130,13 @@ void loop() {
   //Serial.println(lastScan.unixtime());
   //Serial.println(lastScan.isValid());
 
-  // read temperature and humidity every X sec
-  DateTime now = rtc.now();
-  if (lastScan + scanDelay < now) {
-    humidity = dht.readHumidity();
-    temperature = dht.readTemperature();
-    lastScan = now;
-  }
-
   // reset menu after timeout
   if (menuState.current != INFO && menuState.changeTime + menuDelay < millis()) {
     menuState.current = INFO;
   }
 
-  updateDisplay(temperature, humidity);
+  auto sensorsData = sensors.read();
+  updateDisplay(sensorsData);
 
   if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
     doMenuAction(menuState.current, buttonPressed);
@@ -304,9 +288,9 @@ void doMenuAction(MenuType menu, ButtonType button) {
     return;
   } else if (menu == VALVEA_DELAY) {
     if (button == UP && valveASettings.delay < 360) {
-      valveASettings.delay += 10;
-    } else if (button == DOWN && valveASettings.delay > 10) {
-      valveASettings.delay -= 10;
+      valveASettings.delay += 1;
+    } else if (button == DOWN && valveASettings.delay > 1) {
+      valveASettings.delay -= 1;
     }
     return;
   } else if (menu == VALVEA_HOURS) {
@@ -344,9 +328,9 @@ void doMenuAction(MenuType menu, ButtonType button) {
     return;
   } else if (menu == VALVEB_DELAY) {
     if (button == UP && valveBSettings.delay < 360) {
-      valveBSettings.delay += 10;
-    } else if (button == DOWN && valveBSettings.delay > 10) {
-      valveBSettings.delay -= 10;
+      valveBSettings.delay += 1;
+    } else if (button == DOWN && valveBSettings.delay > 1) {
+      valveBSettings.delay -= 1;
     }
     return;
   } else if (menu == VALVEB_HOURS) {
@@ -466,13 +450,13 @@ void doCommand(CommandType command) {
   }
 }
 
-void updateDisplay(float t, float h) {
+void updateDisplay(SensorsData sensorsData) {
   DateTime now = rtc.now();
 
   display.clearDisplay();
 
   if (menuState.current == INFO) {
-    printSensors(t,h);
+    printSensors(sensorsData.temperature, sensorsData.humidity);
     printTime(now);
   } else {
     printMenu(menuState);
@@ -585,7 +569,7 @@ void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
 
   if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
     display.setCursor(75,30);
-    display.print(settings.delay); // 16
+    display.print(byteFormat(settings.delay, "hh")); // 16
   }
   display.setCursor(100,30);
   display.print("мин");
