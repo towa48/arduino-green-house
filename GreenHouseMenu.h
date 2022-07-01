@@ -10,6 +10,4 @@ struct ValveSettings {
   uint32_t delay; // min
 };
 
-
-
 #endif

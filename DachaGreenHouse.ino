@@ -11,9 +11,12 @@
 
 #include "GreenHouseMenu.h"
 #include "GreenHouseSensors.h"
+#include "DisplayHelper.h"
 
 // Copy FreeSans6pt8b_cyr.h to libraries\Adafruit-GFX\Fonts
 #include <Fonts/FreeSans6pt8b_cyr.h>
+
+#define LEADING_ZERO_FMT "%02d"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -510,24 +513,24 @@ void printDateMenu(MenuType m, bool blink) {
 
   if (m != HOURS || !blink) {
     display.setCursor(9,30);
-    display.print(byteFormat(now.hour(), "hh")); // 16
+    DisplayHelper::leadingZeroes(display, now.hour(), 2); // 16
   }
   display.setCursor(25,30);
   display.print(":"); // 4
   if (m != MINUTES || !blink) {
     display.setCursor(29,30);
-    display.print(byteFormat(now.minute(), "hh"));
+    DisplayHelper::leadingZeroes(display, now.minute(), 2);
   }
 
   if (m != DAY || !blink) {
     display.setCursor(9,50);
-    display.print(byteFormat(now.day(), "hh"));
+    DisplayHelper::leadingZeroes(display, now.day(), 2);
   }
   display.setCursor(25,50);
   display.print("."); // 4
   if (m != MONTH || !blink) {
     display.setCursor(29,50);
-    display.print(byteFormat(now.month(), "hh")); // 16
+    DisplayHelper::leadingZeroes(display, now.month(), 2); // 16
   }
   display.setCursor(45,50);
   display.print(".");
@@ -569,7 +572,7 @@ void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
 
   if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
     display.setCursor(75,30);
-    display.print(byteFormat(settings.delay, "hh")); // 16
+    DisplayHelper::leadingZeroes(display, settings.delay, 2); // 16
   }
   display.setCursor(100,30);
   display.print("мин");
@@ -578,13 +581,13 @@ void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
   display.print("Время:");
   if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
     display.setCursor(57,50);
-    display.print(byteFormat(settings.hour, "hh")); // 16
+    DisplayHelper::leadingZeroes(display, settings.hour, 2); // 16
   }
   display.setCursor(73,50);
   display.print(":"); // 4
   if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
     display.setCursor(77,50);
-    display.print(byteFormat(settings.minute, "hh"));
+    DisplayHelper::leadingZeroes(display, settings.minute, 2);
   }
 }
 
@@ -612,20 +615,11 @@ void printTime(DateTime now) {
   display.setTextSize(3);
   display.setTextColor(WHITE);
   display.setCursor(9,50); // 9,24
-  display.print(byteFormat(now.hour(), "hh"));
+  DisplayHelper::leadingZeroes(display, now.hour(), 2);
   display.setCursor(58,50);
   display.print(":");
   display.setCursor(73,50);
-  display.print(byteFormat(now.minute(), "hh"));
-}
-
-char *byteFormat(uint8_t value, char *format) {
-  if (format[0] == 'h' && format[1] == 'h') {
-    format[0] = '0' + value / 10;
-    format[1] = '0' + value % 10;
-  }
-
-  return format;
+  DisplayHelper::leadingZeroes(display, now.minute(), 2);
 }
 
 void swap() {
