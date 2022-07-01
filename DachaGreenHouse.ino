@@ -16,8 +16,6 @@
 // Copy FreeSans6pt8b_cyr.h to libraries\Adafruit-GFX\Fonts
 #include <Fonts/FreeSans6pt8b_cyr.h>
 
-#define LEADING_ZERO_FMT "%02d"
-
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_ADDR   0x3C // OLED display TWI address
@@ -125,7 +123,7 @@ void setup() {
   doCommand(VALVEA_CLOSE);
   doCommand(VALVEB_CLOSE);
 
-  attachInterrupt(0, swap, RISING);
+  attachInterrupt(0, swapButton, RISING);
   delay(2000); // init sensors
 }
 
@@ -622,7 +620,7 @@ void printTime(DateTime now) {
   DisplayHelper::leadingZeroes(display, now.minute(), 2);
 }
 
-void swap() {
+void swapButton() {
   if (menuState.changeTime + 200 > millis()) {
     // prevent double click
     return;
