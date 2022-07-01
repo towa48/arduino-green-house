@@ -6,8 +6,9 @@ namespace DisplayHelper {
         char fmt[128];
         sprintf(fmt, "%%0%dd", points);
 
-        char buf[points];
+        char *buf = new char[points];
         sprintf(buf, fmt, value);
         display.print(buf);
+        delete []buf;
     }
 }
