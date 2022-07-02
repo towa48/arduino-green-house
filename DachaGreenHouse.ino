@@ -83,7 +83,8 @@ void setup() {
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) { // Address 0x3D for 128x64
     Serial.println("SSD1306 allocation failed");
-    for(;;); // Don't proceed, loop forever
+    Serial.flush();
+    abort();
   }
 
   if (!rtc.begin()) {
