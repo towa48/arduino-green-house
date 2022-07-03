@@ -9,6 +9,7 @@
 
 #include "RTClib.h"
 
+#include "GreenHouseSettings.h"
 #include "GreenHouseMenu.h"
 #include "GreenHouseSensors.h"
 #include "DisplayHelper.h"
@@ -75,6 +76,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 RTC_DS3231 rtc;
 GreenHouseSensors sensors(DHTPIN, rtc);
 
+GreenHouseState sceneState;
+SceneHome homeScene(display, rtc, sceneState);
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -137,8 +141,8 @@ void loop() {
     menuState.current = INFO;
   }
 
-  auto sensorsData = sensors.read();
-  updateDisplay(sensorsData);
+  sceneState.sensors = sensors.read();
+  updateDisplay();
 
   if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
     doMenuAction(menuState.current, buttonPressed);
@@ -452,14 +456,11 @@ void doCommand(CommandType command) {
   }
 }
 
-void updateDisplay(SensorsData sensorsData) {
-  DateTime now = rtc.now();
-
+void updateDisplay() {
   display.clearDisplay();
 
   if (menuState.current == INFO) {
-    printSensors(sensorsData.temperature, sensorsData.humidity);
-    printTime(now);
+    homeScene.render();
   } else {
     printMenu(menuState);
   }
@@ -596,29 +597,6 @@ void printMenuTitle(const char *title) {
 
   display.setCursor(3,10);
   display.print(title);
-}
-
-void printSensors(float t, float h) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  display.setCursor(3,10);
-  display.print("T:");
-  display.print(round(t));
-  display.setCursor(42,10);
-  display.print("H:");
-  display.print(round(h));
-}
-
-void printTime(DateTime now) {
-  display.setTextSize(3);
-  display.setTextColor(WHITE);
-  display.setCursor(9,50); // 9,24
-  DisplayHelper::leadingZeroes(display, now.hour(), 2);
-  display.setCursor(58,50);
-  display.print(":");
-  display.setCursor(73,50);
-  DisplayHelper::leadingZeroes(display, now.minute(), 2);
 }
 
 void swapButton() {
