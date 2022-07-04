@@ -29,30 +29,22 @@ private:
     RTC_DS3231 _rtc;
 };
 
-class TemperatureSection : public SceneSection {
+class SensorsSection : public SceneSection {
 public:
-    TemperatureSection(Adafruit_SSD1306 display, GreenHouseState state) :
+    SensorsSection(Adafruit_SSD1306 display, GreenHouseState state) :
         SceneSection(display),
         _state(state)
     {
     }
+
     void render() override {
+        _display.setTextSize(1);
+        _display.setTextColor(WHITE);
+
         _display.setCursor(3,10);
         _display.print("T:");
         _display.print(round(_state.sensors.temperature));
-    }
-private:
-    GreenHouseState _state;
-};
 
-class HumiditySection : public SceneSection {
-public:
-    HumiditySection(Adafruit_SSD1306 display, GreenHouseState state) :
-        SceneSection(display),
-        _state(state)
-    {
-    }
-    void render() override {
         _display.setCursor(42,10);
         _display.print("H:");
         _display.print(round(_state.sensors.humidity));
@@ -63,13 +55,7 @@ private:
 
 SceneHome::SceneHome(Adafruit_SSD1306 display, RTC_DS3231 rtc, GreenHouseState state) : Scene(display) {
     _sections.push(new DateTimeSection(display, rtc));
-    _sections.push(new TemperatureSection(display, state));
-    _sections.push(new HumiditySection(display, state));
-}
-
-void SceneHome::render() {
-    _display.setTextSize(1);
-    _display.setTextColor(WHITE);
+    _sections.push(new SensorsSection(display, state));
 }
 
 // --------------------
