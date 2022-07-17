@@ -43,13 +43,15 @@ ButtonType buttonPressed = NONE;
 enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST, VALVEA_PERCENTAGE, VALVEA_DELAY, VALVEA_HOURS, VALVEA_MINUTES, VALVEB_PERCENTAGE, VALVEB_DELAY, VALVEB_HOURS, VALVEB_MINUTES };
 MenuType firstMenu = INFO;
 MenuType lastMenu = VALVEB_MINUTES;
+
+// Scene reset params
 unsigned int menuDelay = (unsigned int)120000; // ms
+unsigned long changeTime = 0;
 
 struct MenuState {
   MenuType current;
-  unsigned long changeTime;
 };
-MenuState menuState = { INFO, 0 };
+MenuState menuState = { INFO };
 
 ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
@@ -129,9 +131,9 @@ void loop() {
   //Serial.println(lastScan.unixtime());
   //Serial.println(lastScan.isValid());
 
-  // reset menu after timeout
-  if (menuState.current != INFO && menuState.changeTime + menuDelay < millis()) {
-    menuState.current = INFO;
+  // reset scene after timeout
+  if (menuState.current != INFO && changeTime + menuDelay < millis()) {
+    sceneManager.reset();
   }
 
   sceneState.sensors = sensors.read();
@@ -450,7 +452,7 @@ void doCommand(CommandType command) {
 }
 
 void swapButton() {
-  if (menuState.changeTime + 200 > millis()) {
+  if (changeTime + 200 > millis()) {
     // prevent double click
     return;
   }
@@ -470,7 +472,7 @@ void swapButton() {
   }
 
   if (buttonPressed != NONE) {
-    menuState.changeTime = millis();
+    changeTime = millis();
   }
 }
 

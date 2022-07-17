@@ -10,4 +10,8 @@ struct ValveSettings {
   uint32_t delay; // min
 };
 
+struct ValveTestSettings {
+  uint8_t percent = 25;
+};
+
 #endif

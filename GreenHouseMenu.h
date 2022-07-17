@@ -6,16 +6,15 @@
 
 #include "Scene.h"
 #include "GreenHouseSensors.h"
-
-struct ValveTestSettings {
-    uint8_t percent = 25;
-};
+#include "GreenHouseSettings.h"
 
 class GreenHouseState {
 public:
     SensorsData sensors;
     ValveTestSettings valveATest;
     ValveTestSettings valveBTest;
+    ValveSettings valveASettings;
+    ValveSettings valveBSettings;
 };
 
 class SceneHome : public Scene {
@@ -35,12 +34,20 @@ public:
     void render(bool blink) override;
 };
 
+class SceneValveSettings: public Scene {
+public:
+    SceneValveSettings(Adafruit_SSD1306 display, ValveSettings* settings, const char* title);
+    void render(bool blink) override;
+};
+
 const unsigned int BLINK_DELAY = 500; // ms
 
 class SceneManager {
 public:
     SceneManager(Adafruit_SSD1306 display, RTC_DS3231 rtc, GreenHouseState state);
     void updateDisplay();
+    void reset();
+
     void next();
     void prev();
     void inc();
@@ -50,11 +57,12 @@ private:
     Adafruit_SSD1306 _display;
     RTC_DS3231 _rtc;
     GreenHouseState _state;
-    Scene* _currentScene;
     Scene** _scenes;
+    unsigned int _currentScene;
 
     bool _blink;
     unsigned long _lastBlinkTime;
+    bool _dirty;
 };
 
 #endif

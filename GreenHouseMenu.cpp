@@ -70,8 +70,8 @@ public:
     void render() override {
         DateTime now = _rtc.now();
 
-        display.setCursor(9,30);
-        DisplayHelper::leadingZeroes(display, now.hour(), 2); // 16
+        _display.setCursor(9,30);
+        DisplayHelper::leadingZeroes(_display, now.hour(), 2); // 16
     }
 private:
     RTC_DS3231 _rtc;
@@ -84,8 +84,8 @@ public:
     void render() override {
         DateTime now = _rtc.now();
 
-        display.setCursor(29,30);
-        DisplayHelper::leadingZeroes(display, now.minute(), 2);
+        _display.setCursor(29,30);
+        DisplayHelper::leadingZeroes(_display, now.minute(), 2);
     }
 private:
     RTC_DS3231 _rtc;
@@ -98,8 +98,8 @@ public:
     void render() override {
         DateTime now = _rtc.now();
 
-        display.setCursor(9,50);
-        DisplayHelper::leadingZeroes(display, now.day(), 2);
+        _display.setCursor(9,50);
+        DisplayHelper::leadingZeroes(_display, now.day(), 2);
     }
 private:
     RTC_DS3231 _rtc;
@@ -112,8 +112,8 @@ public:
     void render() override {
         DateTime now = _rtc.now();
 
-        display.setCursor(29,50);
-        DisplayHelper::leadingZeroes(display, now.month(), 2); // 16
+        _display.setCursor(29,50);
+        DisplayHelper::leadingZeroes(_display, now.month(), 2); // 16
     }
 private:
     RTC_DS3231 _rtc;
@@ -126,8 +126,8 @@ public:
     void render() override {
         DateTime now = _rtc.now();
 
-        display.setCursor(49,50);
-        display.print(now.year()); // 31
+        _display.setCursor(49,50);
+        _display.print(now.year()); // 31
     }
 private:
     RTC_DS3231 _rtc;
@@ -146,14 +146,14 @@ void SceneDateTimeSettings::render(bool blink) {
     _display.setTextColor(WHITE);
 
     // hours:minutes separator
-    display.setCursor(25,30);
-    display.print(":"); // 4
+    _display.setCursor(25,30);
+    _display.print(":"); // 4
 
     // day.month.year separator
-    display.setCursor(25,50);
-    display.print("."); // 4
-    display.setCursor(45,50);
-    display.print(".");
+    _display.setCursor(25,50);
+    _display.print("."); // 4
+    _display.setCursor(45,50);
+    _display.print(".");
 
     Scene::render(blink);
 }
@@ -171,8 +171,8 @@ public:
     }
 
     void render() override {
-        display.setCursor(64,30);
-        display.print(_settings->percent); // 16
+        _display.setCursor(64,30);
+        _display.print(_settings->percent); // 16
     }
 private:
     ValveTestSettings* _settings;
@@ -185,17 +185,119 @@ SceneValveTest::SceneValveTest(Adafruit_SSD1306 display, ValveTestSettings* sett
 };
 
 void SceneValveTest::render(bool blink) {
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
 
-    display.setCursor(9,30);
-    display.print("Открыть:");
+    _display.setCursor(9,30);
+    _display.print("Открыть:");
 
-    display.setCursor(88,30);
-    display.print("%");
+    _display.setCursor(88,30);
+    _display.print("%");
 
-    display.setCursor(9,50);
-    display.print("OK - Применить");
+    _display.setCursor(9,50);
+    _display.print("OK - Применить");
+
+    Scene::render(blink);
+}
+
+// --------------------
+// SceneValveSettings
+//--------------------
+
+class ValveSettingsPercentSection : public SceneSection {
+public:
+    ValveSettingsPercentSection(Adafruit_SSD1306 display, ValveSettings* settings) :
+        SceneSection(display),
+        _settings(settings)
+    {
+    }
+
+    void render() override {
+        _display.setCursor(42,30);
+        _display.print(_settings->percent); // 16
+    }
+private:
+    ValveSettings* _settings;
+};
+
+class ValveSettingsDelaySection : public SceneSection {
+public:
+    ValveSettingsDelaySection(Adafruit_SSD1306 display, ValveSettings* settings) :
+        SceneSection(display),
+        _settings(settings)
+    {
+    }
+
+    void render() override {
+        _display.setCursor(75,30);
+        DisplayHelper::leadingZeroes(_display, _settings->delay, 2); // 16
+    }
+private:
+    ValveSettings* _settings;
+};
+
+class ValveSettingsHoursSection : public SceneSection {
+public:
+    ValveSettingsHoursSection(Adafruit_SSD1306 display, ValveSettings* settings) :
+        SceneSection(display),
+        _settings(settings)
+    {
+    }
+
+    void render() override {
+        _display.setCursor(57,50);
+        DisplayHelper::leadingZeroes(_display, _settings->hour, 2); // 16
+    }
+private:
+    ValveSettings* _settings;
+};
+
+class ValveSettingsMinutesSection : public SceneSection {
+public:
+    ValveSettingsMinutesSection(Adafruit_SSD1306 display, ValveSettings* settings) :
+        SceneSection(display),
+        _settings(settings)
+    {
+    }
+
+    void render() override {
+        _display.setCursor(77,50);
+        DisplayHelper::leadingZeroes(_display, _settings->minute, 2);
+    }
+private:
+    ValveSettings* _settings;
+};
+
+SceneValveSettings::SceneValveSettings(Adafruit_SSD1306 display, ValveSettings* settings, const char* title) :
+    Scene(display, title, true)
+{
+    _sections.push(new ValveSettingsPercentSection(display, settings));
+    _sections.push(new ValveSettingsDelaySection(display, settings));
+    _sections.push(new ValveSettingsHoursSection(display, settings));
+    _sections.push(new ValveSettingsMinutesSection(display, settings));
+};
+
+void SceneValveSettings::render(bool blink) {
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
+
+    // first line
+    _display.setCursor(9,30);
+    _display.print("Откр:");
+
+    _display.setCursor(58,30);
+    _display.print("%");
+
+    _display.setCursor(100,30);
+    _display.print("мин");
+
+    // second line
+    _display.setCursor(9,50);
+    _display.print("Время:");
+
+    // Hours:minutes
+    _display.setCursor(73,50);
+    _display.print(":"); // 4
 
     Scene::render(blink);
 }
@@ -211,25 +313,29 @@ SceneManager::SceneManager(Adafruit_SSD1306 display, RTC_DS3231 rtc, GreenHouseS
     _blink(false),
     _lastBlinkTime(0)
 {
-    _scenes = new Scene*[4] {
+    _scenes = new Scene*[6] {
         new SceneHome(display, rtc, state),
         new SceneDateTimeSettings(display, rtc),
         new SceneValveTest(display, &state.valveATest, "КРАН А ТЕСТ"),
-        new SceneValveTest(display, &state.valveBTest, "КРАН Б ТЕСТ")
-    }
+        new SceneValveTest(display, &state.valveBTest, "КРАН Б ТЕСТ"),
+        new SceneValveSettings(display, &state.valveASettings, "КРАН А"),
+        new SceneValveSettings(display, &state.valveBSettings, "КРАН Б")
+    };
 
-    _currentScene = _scenes[0];
+    _currentScene = 0;
+    _dirty = false;
 }
 
 void SceneManager::updateDisplay() {
     auto now = millis();
+    Scene* scene = _scenes[_currentScene];
 
     // reset
     if (_lastBlinkTime - now > 10000) {
         _lastBlinkTime = 0;
     }
 
-    if (_currentScene->editable()) {
+    if (scene->editable()) {
         if (_blink && _lastBlinkTime + BLINK_DELAY < now) {
             _blink = false;
             _lastBlinkTime = now;
@@ -244,22 +350,38 @@ void SceneManager::updateDisplay() {
     }
 
     _display.clearDisplay();
-    _currentScene->render(_blink);
+    scene->render(_blink);
     _display.display();
 }
 
+void SceneManager::reset() {
+    if (!_dirty) {
+        return;
+    }
+
+    _currentScene = 0;
+    _dirty = false;
+}
+
 void SceneManager::next() {
-    if (!_currentScene->editable() || !_currentScene->nextState()) {
+    Scene* scene = _scenes[_currentScene];
+    if (!scene->editable() || !scene->nextState()) {
         // TODO: change scene
+        _dirty = true;
     }
 }
 
 void SceneManager::prev() {
-    
+    Scene* scene = _scenes[_currentScene];
+    if (!scene->editable() || !scene->prevState()) {
+        // TODO: change scene
+        _dirty = true;
+    }
 }
 
 void SceneManager::inc() {
-    if (!_currentScene->editable()) {
+    Scene* scene = _scenes[_currentScene];
+    if (!scene->editable()) {
         return;
     }
 
@@ -267,7 +389,8 @@ void SceneManager::inc() {
 }
 
 void SceneManager::dec() {
-    if (!_currentScene->editable()) {
+    Scene* scene = _scenes[_currentScene];
+    if (!scene->editable()) {
         return;
     }
 
@@ -275,65 +398,10 @@ void SceneManager::dec() {
 }
 
 void SceneManager::ok() {
-    if (!_currentScene->editable()) {
+    Scene* scene = _scenes[_currentScene];
+    if (!scene->editable()) {
         return;
     }
 
     // TODO: call ok
 }
-
-// --------------------
-// LEGACY
-//--------------------
-
-void printMenu(MenuState menu) {
-
-
-  MenuType m = menu.current;
-
-  } else if (m == VALVEA_PERCENTAGE || m == VALVEA_DELAY || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
-    printMenuTitle("КРАН А");
-    printValveSettings(m, menu.blink, valveASettings);
-  } else if (m == VALVEB_PERCENTAGE || m == VALVEB_DELAY || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
-    printMenuTitle("КРАН Б");
-    printValveSettings(m, menu.blink, valveBSettings);
-  } else {
-    //int unknownMenu = static_cast<int>(menuState.current);
-    //printMenuTitle(String(unknownMenu));
-  }
-}
-
-void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  display.setCursor(9,30);
-  display.print("Откр:");
-  if ((m != VALVEA_PERCENTAGE && m != VALVEB_PERCENTAGE) || !blink) {
-    display.setCursor(42,30);
-    display.print(settings.percent); // 16
-  }
-  display.setCursor(58,30);
-  display.print("%");
-
-  if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
-    display.setCursor(75,30);
-    DisplayHelper::leadingZeroes(display, settings.delay, 2); // 16
-  }
-  display.setCursor(100,30);
-  display.print("мин");
-
-  display.setCursor(9,50);
-  display.print("Время:");
-  if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
-    display.setCursor(57,50);
-    DisplayHelper::leadingZeroes(display, settings.hour, 2); // 16
-  }
-  display.setCursor(73,50);
-  display.print(":"); // 4
-  if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
-    display.setCursor(77,50);
-    DisplayHelper::leadingZeroes(display, settings.minute, 2);
-  }
-}
-
