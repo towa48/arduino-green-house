@@ -55,6 +55,7 @@ public:
 
     void next();
     void prev();
+ 
     void inc();
     void dec();
     void ok();

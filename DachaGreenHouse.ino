@@ -135,6 +135,12 @@ void loop() {
   //}
   switch (buttonPressed)
   {
+    case LEFT:
+      sceneManager.prev();
+      break;
+    case RIGHT:
+      sceneManager.next();
+      break;
     case UP:
       sceneManager.inc();
       break;
@@ -376,20 +382,8 @@ void swapButton() {
   if (buttonState >= 150 && buttonState < 220){buttonPressed = RIGHT;}
 
   //Serial.println(buttonState);
-  if (buttonPressed == LEFT || buttonPressed == RIGHT) {
-    changeScene(buttonPressed);
-  }
 
   if (buttonPressed != NONE) {
     changeTime = millis();
   }
-}
-
-void changeScene(ButtonType buttonPressed) {
-  if (buttonPressed == LEFT) {
-    sceneManager.prev();
-    return;
-  }
-
-  sceneManager.next();
 }
