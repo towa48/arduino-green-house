@@ -1,5 +1,5 @@
-#ifndef GREEN_HOUSE_MENU_H
-#define GREEN_HOUSE_MENU_H
+#ifndef SCENE_MANAGER_H
+#define SCENE_MANAGER_H
 
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
@@ -10,11 +10,16 @@
 
 class GreenHouseState {
 public:
-    SensorsData sensors;
-    ValveTestSettings valveATest;
-    ValveTestSettings valveBTest;
-    ValveSettings valveASettings;
-    ValveSettings valveBSettings;
+    SensorsData sensors { .temperature=0, .humidity=0 };
+    ValveTestSettings valveATest { .percent=25 };
+    ValveTestSettings valveBTest { .percent=25 };
+    ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=5 };
+    ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=5 };
+
+    VALVE_STATE valveA = S_NONE;
+    VALVE_STATE valveB = S_NONE;
+    DateTime valveALastOpen;
+    DateTime valveBLastOpen;
 };
 
 class SceneHome : public Scene {

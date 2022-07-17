@@ -11,7 +11,9 @@ struct ValveSettings {
 };
 
 struct ValveTestSettings {
-  uint8_t percent = 25;
+  uint8_t percent;
 };
+
+enum VALVE_STATE { S_NONE, VALVE_OPEN, VALVE_CLOSE };
 
 #endif

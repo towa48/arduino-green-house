@@ -10,7 +10,7 @@
 #include "RTClib.h"
 
 #include "GreenHouseSettings.h"
-#include "GreenHouseMenu.h"
+#include "SceneManager.h"
 #include "GreenHouseSensors.h"
 #include "DisplayHelper.h"
 
@@ -58,21 +58,12 @@ ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
 CommandType queuedCommand = C_NONE;
 
-enum VALVE_STATE { S_NONE, VALVE_OPEN, VALVE_CLOSE };
-struct AppState {
-  VALVE_STATE valveA;
-  VALVE_STATE valveB;
-  DateTime valveALastOpen;
-  DateTime valveBLastOpen;
-};
-AppState state = { S_NONE, S_NONE };
-
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 RTC_DS3231 rtc;
 GreenHouseSensors sensors(DHTPIN, rtc);
 
-GreenHouseState sceneState;
-SceneManager sceneManager(display, rtc, sceneState);
+GreenHouseState state;
+SceneManager sceneManager(display, rtc, state);
 
 void setup() {
   // put your setup code here, to run once:
@@ -136,7 +127,7 @@ void loop() {
     sceneManager.reset();
   }
 
-  sceneState.sensors = sensors.read();
+  state.sensors = sensors.read();
   sceneManager.updateDisplay();
 
   if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
@@ -225,21 +216,21 @@ void doMenuAction(MenuType menu, ButtonType button) {
   }
 
   if (menu == VALVEA_TEST) {
-    if (button == UP && sceneState.valveATest.percent < 100) {
-      sceneState.valveATest.percent += 25;
-    } else if (button == DOWN && sceneState.valveATest.percent > 0) {
-      sceneState.valveATest.percent -= 25;
+    if (button == UP && state.valveATest.percent < 100) {
+      state.valveATest.percent += 25;
+    } else if (button == DOWN && state.valveATest.percent > 0) {
+      state.valveATest.percent -= 25;
     }
   } else if (menu == VALVEB_TEST) {
-    if (button == UP && sceneState.valveBTest.percent < 100) {
-      sceneState.valveBTest.percent += 25;
-    } else if (button == DOWN && sceneState.valveBTest.percent > 0) {
-      sceneState.valveBTest.percent -= 25;
+    if (button == UP && state.valveBTest.percent < 100) {
+      state.valveBTest.percent += 25;
+    } else if (button == DOWN && state.valveBTest.percent > 0) {
+      state.valveBTest.percent -= 25;
     }
   }
 
   if (button == OK && menu == VALVEA_TEST) {
-    switch(sceneState.valveATest.percent) {
+    switch(state.valveATest.percent) {
       case 0:
         queuedCommand = VALVEA_CLOSE;
         break;
@@ -258,7 +249,7 @@ void doMenuAction(MenuType menu, ButtonType button) {
     }
     return;
   } else if (button == OK && menu == VALVEB_TEST) {
-    switch(sceneState.valveBTest.percent) {
+    switch(state.valveBTest.percent) {
       case 0:
         queuedCommand = VALVEB_CLOSE;
         break;
