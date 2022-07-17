@@ -50,8 +50,25 @@ const unsigned int BLINK_DELAY = 500; // ms
 class SceneManager {
 public:
     SceneManager(Adafruit_SSD1306 display, RTC_DS3231 rtc, GreenHouseState state);
+
+    /**
+     * @brief Redraw screen
+     * 
+     */
     void updateDisplay();
+
+    /**
+     * @brief Reset menu state to IDLE
+     * 
+     */
     void reset();
+
+    /**
+     * @brief Return state of menu
+     * 
+     * @return false if menu was switched to editable and can be reset, overwise true
+     */
+    bool idle();
 
     void next();
     void prev();

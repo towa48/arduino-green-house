@@ -41,20 +41,9 @@
 enum ButtonType { NONE, LEFT, UP, OK, DOWN, RIGHT };
 ButtonType buttonPressed = NONE;
 
-// TODO: move to sceneManager
-enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST, VALVEA_PERCENTAGE, VALVEA_DELAY, VALVEA_HOURS, VALVEA_MINUTES, VALVEB_PERCENTAGE, VALVEB_DELAY, VALVEB_HOURS, VALVEB_MINUTES };
-
 // Scene reset params
 unsigned int sceneDelay = (unsigned int)120000; // ms
 unsigned long changeTime = 0;
-
-struct MenuState {
-  MenuType current;
-};
-MenuState menuState = { INFO };
-
-ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=3 };
-ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 RTC_DS3231 rtc;
@@ -122,7 +111,7 @@ void loop() {
   //Serial.println(lastScan.isValid());
 
   // reset scene after timeout
-  if (menuState.current != INFO && changeTime + sceneDelay < millis()) {
+  if (!sceneManager.idle() && changeTime + sceneDelay < millis()) {
     sceneManager.reset();
   }
 
@@ -158,209 +147,6 @@ void loop() {
 
   //Serial.println("delay");
   //Serial.write();
-}
-
-// TODO: implement inc(), dec(), ok() for manager
-void doMenuAction(MenuType menu, ButtonType button) {
-  DateTime now = rtc.now();
-  if (menu == HOURS) {
-    if (button == UP) {
-      uint8_t h = now.hour() + 1;
-      h = h > 23 ? 0 : h;
-      rtc.adjust(DateTime(now.year(), now.month(), now.day(), h, now.minute(), 0));
-    } else if (button == DOWN) {
-      uint8_t h = now.hour() - 1;
-      h = h < 0 ? 23 : h;
-      rtc.adjust(DateTime(now.year(), now.month(), now.day(), h, now.minute(), 0));
-    }
-    return;
-  }
-
-  if (menu == MINUTES) {
-    if (button == UP) {
-      uint8_t m = now.minute() + 1;
-      m = m > 59 ? 0 : m;
-      rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), m, 0));
-    } else if (button == DOWN) {
-      uint8_t m = now.minute() - 1;
-      m = m < 0 ? 59 : m;
-      rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), m, 0));
-    }
-    return;
-  }
-
-  if (menu == DAY) {
-    if (button == UP) {
-      uint8_t d = now.day() + 1;
-      d = d > 31 ? 1 : d;
-      rtc.adjust(DateTime(now.year(), now.month(), d, now.hour(), now.minute(), 0));
-    } else if (button == DOWN) {
-      uint8_t d = now.day() - 1;
-      d = d < 1 ? 31 : d;
-      rtc.adjust(DateTime(now.year(), now.month(), d, now.hour(), now.minute(), 0));
-    }
-    return;
-  }
-
-  if (menu == MONTH) {
-    if (button == UP) {
-      uint8_t m = now.month() + 1;
-      m = m > 12 ? 1 : m;
-      rtc.adjust(DateTime(now.year(), m, now.day(), now.hour(), now.minute(), 0));
-    } else if (button == DOWN) {
-      uint8_t m = now.month() - 1;
-      m = m < 1 ? 12 : m;
-      rtc.adjust(DateTime(now.year(), m, now.day(), now.hour(), now.minute(), 0));
-    }
-    return;
-  }
-
-  if (menu == YEAR) {
-    if (button == UP) {
-      uint16_t y = now.year() + 1;
-      y = y > 2100 ? 2001 : y;
-      rtc.adjust(DateTime(y, now.month(), now.day(), now.hour(), now.minute(), 0));
-    } else if (button == DOWN) {
-      uint16_t y = now.year() - 1;
-      y = y < 2001 ? 2100 : y;
-      rtc.adjust(DateTime(y, now.month(), now.day(), now.hour(), now.minute(), 0));
-    }
-    return;
-  }
-
-  if (menu == VALVEA_TEST) {
-    if (button == UP && state.valveATest.percent < 100) {
-      state.valveATest.percent += 25;
-    } else if (button == DOWN && state.valveATest.percent > 0) {
-      state.valveATest.percent -= 25;
-    }
-  } else if (menu == VALVEB_TEST) {
-    if (button == UP && state.valveBTest.percent < 100) {
-      state.valveBTest.percent += 25;
-    } else if (button == DOWN && state.valveBTest.percent > 0) {
-      state.valveBTest.percent -= 25;
-    }
-  }
-
-  if (button == OK && menu == VALVEA_TEST) {
-    switch(state.valveATest.percent) {
-      case 0:
-        commandManager.exec(VALVEA_CLOSE);
-        break;
-      case 25:
-        commandManager.exec(VALVEA_OPEN_25);
-        break;
-      case 50:
-        commandManager.exec(VALVEA_OPEN_50);
-        break;
-      case 75:
-        commandManager.exec(VALVEA_OPEN_75);
-        break;
-      case 100:
-        commandManager.exec(VALVEA_OPEN_100);
-        break;
-    }
-    return;
-  } else if (button == OK && menu == VALVEB_TEST) {
-    switch(state.valveBTest.percent) {
-      case 0:
-        commandManager.exec(VALVEB_CLOSE);
-        break;
-      case 25:
-        commandManager.exec(VALVEB_OPEN_25);
-        break;
-      case 50:
-        commandManager.exec(VALVEB_OPEN_50);
-        break;
-      case 75:
-        commandManager.exec(VALVEB_OPEN_75);
-        break;
-      case 100:
-        commandManager.exec(VALVEB_OPEN_100);
-        break;
-    }
-    return;
-  }
-
-  // VALVE A SETTINGS
-
-  if (menu == VALVEA_PERCENTAGE) {
-    if (button == UP && valveASettings.percent < 100) {
-      valveASettings.percent += 25;
-    } else if (button == DOWN && valveASettings.percent > 25) {
-      valveASettings.percent -= 25;
-    }
-    return;
-  } else if (menu == VALVEA_DELAY) {
-    if (button == UP && valveASettings.delay < 360) {
-      valveASettings.delay += 1;
-    } else if (button == DOWN && valveASettings.delay > 1) {
-      valveASettings.delay -= 1;
-    }
-    return;
-  } else if (menu == VALVEA_HOURS) {
-    if (button == UP && valveASettings.hour < 23) {
-      valveASettings.hour += 1;
-    }else if (button == UP && valveASettings.hour >= 23) {
-      valveASettings.hour = 0;
-    } else if (button == DOWN && valveASettings.hour > 0) {
-      valveASettings.hour -= 1;
-    }else if (button == DOWN && valveASettings.hour <= 0) {
-      valveASettings.hour = 23;
-    }
-    return;
-  } else if (menu == VALVEA_MINUTES) {
-    if (button == UP && valveASettings.minute < 59) {
-      valveASettings.minute += 1;
-    }else if (button == UP && valveASettings.minute >= 59) {
-      valveASettings.minute = 0;
-    } else if (button == DOWN && valveASettings.minute > 0) {
-      valveASettings.minute -= 1;
-    }else if (button == DOWN && valveASettings.minute <= 0) {
-      valveASettings.minute = 59;
-    }
-    return;
-  }
-
-  // VALVE B SETTINGS
-
-  if (menu == VALVEB_PERCENTAGE) {
-    if (button == UP && valveBSettings.percent < 100) {
-      valveBSettings.percent += 25;
-    } else if (button == DOWN && valveBSettings.percent > 25) {
-      valveBSettings.percent -= 25;
-    }
-    return;
-  } else if (menu == VALVEB_DELAY) {
-    if (button == UP && valveBSettings.delay < 360) {
-      valveBSettings.delay += 1;
-    } else if (button == DOWN && valveBSettings.delay > 1) {
-      valveBSettings.delay -= 1;
-    }
-    return;
-  } else if (menu == VALVEB_HOURS) {
-    if (button == UP && valveBSettings.hour < 23) {
-      valveBSettings.hour += 1;
-    }else if (button == UP && valveBSettings.hour >= 23) {
-      valveBSettings.hour = 0;
-    } else if (button == DOWN && valveBSettings.hour > 0) {
-      valveBSettings.hour -= 1;
-    }else if (button == DOWN && valveBSettings.hour <= 0) {
-      valveBSettings.hour = 23;
-    }
-    return;
-  } else if (menu == VALVEB_MINUTES) {
-    if (button == UP && valveBSettings.minute < 59) {
-      valveBSettings.minute += 1;
-    }else if (button == UP && valveBSettings.minute >= 59) {
-      valveBSettings.minute = 0;
-    } else if (button == DOWN && valveBSettings.minute > 0) {
-      valveBSettings.minute -= 1;
-    }else if (button == DOWN && valveBSettings.minute <= 0) {
-      valveBSettings.minute = 59;
-    }
-    return;
-  }
 }
 
 void swapButton() {
