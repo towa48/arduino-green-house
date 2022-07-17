@@ -129,10 +129,6 @@ void loop() {
   state.sensors = sensors.read();
   sceneManager.updateDisplay();
 
-  //if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
-  //  doMenuAction(menuState.current, buttonPressed);
-  //  buttonPressed = NONE;  
-  //}
   switch (buttonPressed)
   {
     case LEFT:
@@ -164,6 +160,7 @@ void loop() {
   //Serial.write();
 }
 
+// TODO: implement inc(), dec(), ok() for manager
 void doMenuAction(MenuType menu, ButtonType button) {
   DateTime now = rtc.now();
   if (menu == HOURS) {
