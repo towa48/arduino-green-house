@@ -13,6 +13,7 @@
 #include "SceneManager.h"
 #include "GreenHouseSensors.h"
 #include "DisplayHelper.h"
+#include "CommandManager.h"
 
 // Copy FreeSans6pt8b_cyr.h to libraries\Adafruit-GFX\Fonts
 #include <Fonts/FreeSans6pt8b_cyr.h>
@@ -40,12 +41,11 @@
 enum ButtonType { NONE, LEFT, UP, OK, DOWN, RIGHT };
 ButtonType buttonPressed = NONE;
 
+// TODO: move to sceneManager
 enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST, VALVEA_PERCENTAGE, VALVEA_DELAY, VALVEA_HOURS, VALVEA_MINUTES, VALVEB_PERCENTAGE, VALVEB_DELAY, VALVEB_HOURS, VALVEB_MINUTES };
-MenuType firstMenu = INFO;
-MenuType lastMenu = VALVEB_MINUTES;
 
 // Scene reset params
-unsigned int menuDelay = (unsigned int)120000; // ms
+unsigned int sceneDelay = (unsigned int)120000; // ms
 unsigned long changeTime = 0;
 
 struct MenuState {
@@ -55,14 +55,13 @@ MenuState menuState = { INFO };
 
 ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
-enum CommandType { C_NONE, VALVEA_OPEN_25, VALVEA_OPEN_50, VALVEA_OPEN_75, VALVEA_OPEN_100, VALVEA_CLOSE, VALVEB_OPEN_25, VALVEB_OPEN_50, VALVEB_OPEN_75, VALVEB_OPEN_100, VALVEB_CLOSE };
-CommandType queuedCommand = C_NONE;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 RTC_DS3231 rtc;
 GreenHouseSensors sensors(DHTPIN, rtc);
 
 GreenHouseState state;
+CommandManager commandManager;
 SceneManager sceneManager(display, rtc, state);
 
 void setup() {
@@ -111,8 +110,8 @@ void setup() {
   // TODO: Load struct from EEPROM
 
   // Clear state
-  doCommand(VALVEA_CLOSE);
-  doCommand(VALVEB_CLOSE);
+  commandManager.exec(VALVEA_CLOSE);
+  commandManager.exec(VALVEB_CLOSE);
 
   attachInterrupt(0, swapButton, RISING);
   delay(2000); // init sensors
@@ -123,25 +122,36 @@ void loop() {
   //Serial.println(lastScan.isValid());
 
   // reset scene after timeout
-  if (menuState.current != INFO && changeTime + menuDelay < millis()) {
+  if (menuState.current != INFO && changeTime + sceneDelay < millis()) {
     sceneManager.reset();
   }
 
   state.sensors = sensors.read();
   sceneManager.updateDisplay();
 
-  if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
-    doMenuAction(menuState.current, buttonPressed);
-    buttonPressed = NONE;  
+  //if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
+  //  doMenuAction(menuState.current, buttonPressed);
+  //  buttonPressed = NONE;  
+  //}
+  switch (buttonPressed)
+  {
+    case UP:
+      sceneManager.inc();
+      break;
+    case DOWN:
+      sceneManager.dec();
+      break;
+    case OK:
+      sceneManager.ok();
+      break;
   }
 
-  checkQueuedCommand();
-
-  if (queuedCommand != C_NONE) {
-    doCommand(queuedCommand);
-    queuedCommand = C_NONE;
+  // Reset button state beacause all managers already notified
+  if (buttonPressed != NONE) {
+    buttonPressed = NONE;
   }
 
+  commandManager.checkQueued();
   delay(200);
 
   //Serial.println("delay");
@@ -232,38 +242,38 @@ void doMenuAction(MenuType menu, ButtonType button) {
   if (button == OK && menu == VALVEA_TEST) {
     switch(state.valveATest.percent) {
       case 0:
-        queuedCommand = VALVEA_CLOSE;
+        commandManager.exec(VALVEA_CLOSE);
         break;
       case 25:
-        queuedCommand = VALVEA_OPEN_25;
+        commandManager.exec(VALVEA_OPEN_25);
         break;
       case 50:
-        queuedCommand = VALVEA_OPEN_50;
+        commandManager.exec(VALVEA_OPEN_50);
         break;
       case 75:
-        queuedCommand = VALVEA_OPEN_75;
+        commandManager.exec(VALVEA_OPEN_75);
         break;
       case 100:
-        queuedCommand = VALVEA_OPEN_100;
+        commandManager.exec(VALVEA_OPEN_100);
         break;
     }
     return;
   } else if (button == OK && menu == VALVEB_TEST) {
     switch(state.valveBTest.percent) {
       case 0:
-        queuedCommand = VALVEB_CLOSE;
+        commandManager.exec(VALVEB_CLOSE);
         break;
       case 25:
-        queuedCommand = VALVEB_OPEN_25;
+        commandManager.exec(VALVEB_OPEN_25);
         break;
       case 50:
-        queuedCommand = VALVEB_OPEN_50;
+        commandManager.exec(VALVEB_OPEN_50);
         break;
       case 75:
-        queuedCommand = VALVEB_OPEN_75;
+        commandManager.exec(VALVEB_OPEN_75);
         break;
       case 100:
-        queuedCommand = VALVEB_OPEN_100;
+        commandManager.exec(VALVEB_OPEN_100);
         break;
     }
     return;
@@ -350,98 +360,6 @@ void doMenuAction(MenuType menu, ButtonType button) {
   }
 }
 
-void checkQueuedCommand() {
-  DateTime now = rtc.now();
-
-  if (state.valveA == S_NONE && now.hour() == valveASettings.hour && now.minute() == valveASettings.minute) {
-    switch(valveASettings.percent) {
-      case 25:
-        queuedCommand = VALVEA_OPEN_25;
-        state.valveA = VALVE_OPEN;
-        state.valveALastOpen = now;
-        break;
-      case 50:
-        queuedCommand = VALVEA_OPEN_50;
-        state.valveA = VALVE_OPEN;
-        state.valveALastOpen = now;
-        break;
-      case 75:
-        queuedCommand = VALVEA_OPEN_75;
-        state.valveA = VALVE_OPEN;
-        state.valveALastOpen = now;
-        break;
-      default:
-        queuedCommand = VALVEA_OPEN_100;
-        state.valveA = VALVE_OPEN;
-        state.valveALastOpen = now;
-        break;
-    }
-  } else if (state.valveA == VALVE_OPEN && state.valveALastOpen + TimeSpan(valveASettings.delay * 60) < now) {
-    queuedCommand = VALVEA_CLOSE;
-    state.valveA = S_NONE;
-  }
-
-  //if (state.valveB == S_NONE && now.hour() == valveBSettings.hour && now.minute() == valveBSettings.minute) {
-  //  switch(valveBSettings.percent) {
-  //    case 25:
-  //      queuedCommand = VALVEB_OPEN_25;
-  //      state.valveB = VALVE_OPEN;
-  //      break;
-  //    case 50:
-  //      queuedCommand = VALVEB_OPEN_50;
-  //      state.valveB = VALVE_OPEN;
-  //      break;
-  //    case 75:
-  //      queuedCommand = VALVEB_OPEN_75;
-  //      state.valveA = VALVE_OPEN;
-  //      break;
-  //    default:
-  //      queuedCommand = VALVEB_OPEN_100;
-  //      state.valveB = VALVE_OPEN;
-  //      break;
-  //  }
-  //}
-}
-
-void doCommand(CommandType command) {
-  byte k_delay;
-  unsigned long delay025 = 900;
-  bool isValveOpen = false;
-  bool isValveClose = false;
-  switch(command) {
-    case VALVEA_OPEN_25:
-      k_delay = 1;
-      isValveOpen = true;
-      break;
-    case VALVEA_OPEN_50:
-      k_delay = 2;
-      isValveOpen = true;
-      break;
-    case VALVEA_OPEN_75:
-      k_delay = 3;
-      isValveOpen = true;
-      break;
-    case VALVEA_OPEN_100:
-      k_delay = 4;
-      isValveOpen = true;
-      break;
-    case VALVEA_CLOSE:
-      k_delay = 4;
-      isValveClose = true;
-  }
-
-  if (isValveOpen) {
-    digitalWrite(VALVE_OPEN_PIN, LOW);
-    delay(k_delay * delay025);
-    digitalWrite(VALVE_OPEN_PIN, HIGH);
-    return;
-  } else if (isValveClose) {
-    digitalWrite(VALVE_CLOSE_PIN, LOW);
-    delay(k_delay * delay025);
-    digitalWrite(VALVE_CLOSE_PIN, HIGH);
-  }
-}
-
 void swapButton() {
   if (changeTime + 200 > millis()) {
     // prevent double click
@@ -474,14 +392,4 @@ void changeScene(ButtonType buttonPressed) {
   }
 
   sceneManager.next();
-
-  //if (buttonPressed == LEFT && menuState.current == firstMenu) {
-  //  menuState.current = lastMenu;
-  //} else if (buttonPressed == RIGHT && menuState.current == lastMenu) {
-  //  menuState.current = firstMenu;
-  //} else if (buttonPressed == LEFT) {
-  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) - 1);
-  //} else if (buttonPressed == RIGHT) {
-  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) + 1);
-  //}
 }

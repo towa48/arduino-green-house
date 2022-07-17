@@ -369,6 +369,18 @@ void SceneManager::next() {
         // TODO: change scene
         _dirty = true;
     }
+
+  // TODO: implement correct scene switch
+
+  //if (buttonPressed == LEFT && menuState.current == firstMenu) {
+  //  menuState.current = lastMenu;
+  //} else if (buttonPressed == RIGHT && menuState.current == lastMenu) {
+  //  menuState.current = firstMenu;
+  //} else if (buttonPressed == LEFT) {
+  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) - 1);
+  //} else if (buttonPressed == RIGHT) {
+  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) + 1);
+  //}
 }
 
 void SceneManager::prev() {
