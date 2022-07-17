@@ -7,8 +7,8 @@
 #include "DHT.h"
 
 struct SensorsData {
-    float temperature;
-    float humidity;
+    float temperature = 0;
+    float humidity = 0;
 };
 
 class GreenHouseSensors {

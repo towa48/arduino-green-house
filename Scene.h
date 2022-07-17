@@ -11,12 +11,16 @@
  */
 class Scene {
 public:
-    Scene(Adafruit_SSD1306 display);
+    Scene(Adafruit_SSD1306 display, const char* title);
+
+    Scene(Adafruit_SSD1306 display, const char* title, bool editable);
 
     /**
      * @brief Render screen for particular scene
+     * 
+     * @param blink Current section should not be displayed if scene is editable
      */
-    virtual void render();
+    virtual void render(bool blink);
 
     /**
      * @brief Change to the next substate. Can be used for scene menu blinking.
@@ -31,11 +35,21 @@ public:
      * @return true when next substate is possible, false overwise
      */
     virtual bool prevState();
+
+    /**
+     * @brief Describe scene as editable
+     * 
+     * @return true when scene is editable, false overwise
+     */
+    virtual bool editable();
 protected:
     Adafruit_SSD1306 _display;
     SceneSectionCollection _sections;
     size_t _currentSectionIndex;
     bool _editable;
+private:
+    const char* _title;
+    void printTitle(const char* title);
 };
 
 #endif

@@ -44,19 +44,12 @@ enum MenuType { INFO, HOURS, MINUTES, DAY, MONTH, YEAR, VALVEA_TEST, VALVEB_TEST
 MenuType firstMenu = INFO;
 MenuType lastMenu = VALVEB_MINUTES;
 unsigned int menuDelay = (unsigned int)120000; // ms
-unsigned int blinkDelay = 500; // ms
+
 struct MenuState {
   MenuType current;
   unsigned long changeTime;
-  bool blink;
-  unsigned long blinkTime;
 };
-//bool blink = false;
-//unsigned long blinkTime;
-MenuState menuState = { INFO, 0, false, 0 };
-
-uint8_t valveATestPercent = 25;
-uint8_t valveBTestPercent = 25;
+MenuState menuState = { INFO, 0 };
 
 ValveSettings valveASettings { .percent=100, .hour=19, .minute=0, .delay=3 };
 ValveSettings valveBSettings { .percent=100, .hour=19, .minute=0, .delay=3 };
@@ -77,7 +70,7 @@ RTC_DS3231 rtc;
 GreenHouseSensors sensors(DHTPIN, rtc);
 
 GreenHouseState sceneState;
-SceneHome homeScene(display, rtc, sceneState);
+SceneManager sceneManager(display, rtc, sceneState);
 
 void setup() {
   // put your setup code here, to run once:
@@ -142,7 +135,7 @@ void loop() {
   }
 
   sceneState.sensors = sensors.read();
-  updateDisplay();
+  sceneManager.updateDisplay();
 
   if (menuState.current != INFO && buttonPressed != LEFT && buttonPressed != RIGHT) {
     doMenuAction(menuState.current, buttonPressed);
@@ -230,21 +223,21 @@ void doMenuAction(MenuType menu, ButtonType button) {
   }
 
   if (menu == VALVEA_TEST) {
-    if (button == UP && valveATestPercent < 100) {
-      valveATestPercent += 25;
-    } else if (button == DOWN && valveATestPercent > 0) {
-      valveATestPercent -= 25;
+    if (button == UP && sceneState.valveATest.percent < 100) {
+      sceneState.valveATest.percent += 25;
+    } else if (button == DOWN && sceneState.valveATest.percent > 0) {
+      sceneState.valveATest.percent -= 25;
     }
   } else if (menu == VALVEB_TEST) {
-    if (button == UP && valveBTestPercent < 100) {
-      valveBTestPercent += 25;
-    } else if (button == DOWN && valveBTestPercent > 0) {
-      valveBTestPercent -= 25;
+    if (button == UP && sceneState.valveBTest.percent < 100) {
+      sceneState.valveBTest.percent += 25;
+    } else if (button == DOWN && sceneState.valveBTest.percent > 0) {
+      sceneState.valveBTest.percent -= 25;
     }
   }
 
   if (button == OK && menu == VALVEA_TEST) {
-    switch(valveATestPercent) {
+    switch(sceneState.valveATest.percent) {
       case 0:
         queuedCommand = VALVEA_CLOSE;
         break;
@@ -263,7 +256,7 @@ void doMenuAction(MenuType menu, ButtonType button) {
     }
     return;
   } else if (button == OK && menu == VALVEB_TEST) {
-    switch(valveBTestPercent) {
+    switch(sceneState.valveBTest.percent) {
       case 0:
         queuedCommand = VALVEB_CLOSE;
         break;
@@ -456,149 +449,6 @@ void doCommand(CommandType command) {
   }
 }
 
-void updateDisplay() {
-  display.clearDisplay();
-
-  if (menuState.current == INFO) {
-    homeScene.render();
-  } else {
-    printMenu(menuState);
-  }
-  
-  display.display();
-}
-
-void printMenu(MenuState menu) {
-  auto now = millis();
-  // reset
-  if (menuState.blinkTime - now > 10000) {
-      menuState.blinkTime = 0;
-  }
-
-  if (menuState.blink && menuState.blinkTime + blinkDelay < now) {
-    menuState.blink = false;
-    menuState.blinkTime = now;
-  } else if (!menuState.blink && menuState.blinkTime + blinkDelay < now) {
-    menuState.blink = true;
-    menuState.blinkTime = now;
-  }
-
-  MenuType m = menu.current;
-  if (m == HOURS || m == MINUTES || m == DAY || m == MONTH || m == YEAR) {
-    printMenuTitle("ЧАСЫ");
-    printDateMenu(m, menu.blink);
-  } else if (m == VALVEA_TEST) {
-    printMenuTitle("КРАН А ТЕСТ");
-    printValveTest(menu.blink, valveATestPercent);
-  } else if (m == VALVEB_TEST) {
-    printMenuTitle("КРАН Б ТЕСТ");
-    printValveTest(menu.blink, valveBTestPercent);
-  } else if (m == VALVEA_PERCENTAGE || m == VALVEA_DELAY || m == VALVEA_HOURS || m == VALVEA_MINUTES) {
-    printMenuTitle("КРАН А");
-    printValveSettings(m, menu.blink, valveASettings);
-  } else if (m == VALVEB_PERCENTAGE || m == VALVEB_DELAY || m == VALVEB_HOURS || m == VALVEB_MINUTES) {
-    printMenuTitle("КРАН Б");
-    printValveSettings(m, menu.blink, valveBSettings);
-  } else {
-    //int unknownMenu = static_cast<int>(menuState.current);
-    //printMenuTitle(String(unknownMenu));
-  }
-}
-
-void printDateMenu(MenuType m, bool blink) {
-  DateTime now = rtc.now();
-
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  if (m != HOURS || !blink) {
-    display.setCursor(9,30);
-    DisplayHelper::leadingZeroes(display, now.hour(), 2); // 16
-  }
-  display.setCursor(25,30);
-  display.print(":"); // 4
-  if (m != MINUTES || !blink) {
-    display.setCursor(29,30);
-    DisplayHelper::leadingZeroes(display, now.minute(), 2);
-  }
-
-  if (m != DAY || !blink) {
-    display.setCursor(9,50);
-    DisplayHelper::leadingZeroes(display, now.day(), 2);
-  }
-  display.setCursor(25,50);
-  display.print("."); // 4
-  if (m != MONTH || !blink) {
-    display.setCursor(29,50);
-    DisplayHelper::leadingZeroes(display, now.month(), 2); // 16
-  }
-  display.setCursor(45,50);
-  display.print(".");
-  if (m != YEAR || !blink) {
-    display.setCursor(49,50);
-    display.print(now.year()); // 31
-  }
-}
-
-void printValveTest(bool blink, uint8_t percent) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  display.setCursor(9,30);
-  display.print("Открыть:");
-  if (!blink) {
-    display.setCursor(64,30);
-    display.print(percent); // 16
-  }
-  display.setCursor(88,30);
-  display.print("%");
-
-  display.setCursor(9,50);
-  display.print("OK - Применить");
-}
-
-void printValveSettings(MenuType m, bool blink, ValveSettings settings) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  display.setCursor(9,30);
-  display.print("Откр:");
-  if ((m != VALVEA_PERCENTAGE && m != VALVEB_PERCENTAGE) || !blink) {
-    display.setCursor(42,30);
-    display.print(settings.percent); // 16
-  }
-  display.setCursor(58,30);
-  display.print("%");
-
-  if ((m != VALVEA_DELAY && m != VALVEB_DELAY) || !blink) {
-    display.setCursor(75,30);
-    DisplayHelper::leadingZeroes(display, settings.delay, 2); // 16
-  }
-  display.setCursor(100,30);
-  display.print("мин");
-
-  display.setCursor(9,50);
-  display.print("Время:");
-  if ((m != VALVEA_HOURS && m != VALVEB_HOURS) || !blink) {
-    display.setCursor(57,50);
-    DisplayHelper::leadingZeroes(display, settings.hour, 2); // 16
-  }
-  display.setCursor(73,50);
-  display.print(":"); // 4
-  if ((m != VALVEA_MINUTES && m != VALVEB_MINUTES) || !blink) {
-    display.setCursor(77,50);
-    DisplayHelper::leadingZeroes(display, settings.minute, 2);
-  }
-}
-
-void printMenuTitle(const char *title) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-
-  display.setCursor(3,10);
-  display.print(title);
-}
-
 void swapButton() {
   if (menuState.changeTime + 200 > millis()) {
     // prevent double click
@@ -616,7 +466,7 @@ void swapButton() {
 
   //Serial.println(buttonState);
   if (buttonPressed == LEFT || buttonPressed == RIGHT) {
-    changeMenu(buttonPressed);
+    changeScene(buttonPressed);
   }
 
   if (buttonPressed != NONE) {
@@ -624,14 +474,21 @@ void swapButton() {
   }
 }
 
-void changeMenu(ButtonType buttonPressed) {
-  if (buttonPressed == LEFT && menuState.current == firstMenu) {
-    menuState.current = lastMenu;
-  } else if (buttonPressed == RIGHT && menuState.current == lastMenu) {
-    menuState.current = firstMenu;
-  } else if (buttonPressed == LEFT) {
-    menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) - 1);
-  } else if (buttonPressed == RIGHT) {
-    menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) + 1);
+void changeScene(ButtonType buttonPressed) {
+  if (buttonPressed == LEFT) {
+    sceneManager.prev();
+    return;
   }
+
+  sceneManager.next();
+
+  //if (buttonPressed == LEFT && menuState.current == firstMenu) {
+  //  menuState.current = lastMenu;
+  //} else if (buttonPressed == RIGHT && menuState.current == lastMenu) {
+  //  menuState.current = firstMenu;
+  //} else if (buttonPressed == LEFT) {
+  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) - 1);
+  //} else if (buttonPressed == RIGHT) {
+  //  menuState.current = static_cast<MenuType>(static_cast<int>(menuState.current) + 1);
+  //}
 }
